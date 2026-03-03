@@ -1,0 +1,50 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model WalletEntry {
+  id        String   @id @default(cuid())
+  address   String   @unique // always lowercase
+  tier      Tier
+  maxAlloc  Int // per-phase override
+  active    Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Tier {
+  GTD
+  WL
+}
+
+model ClaimRecord {
+  id          String      @id @default(cuid())
+  tokenId     Int         @unique
+  wallet      String // lowercase
+  status      ClaimStatus @default(READY)
+  name        String?
+  email       String?
+  shippingAddress String?
+  country     String?
+  tracking    String?
+  submittedAt DateTime?
+  shippedAt   DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum ClaimStatus {
+  READY
+  SUBMITTED
+  VERIFIED
+  SHIPPED
+}

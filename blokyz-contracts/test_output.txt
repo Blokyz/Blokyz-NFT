@@ -1,0 +1,223 @@
+﻿No contracts to compile
+No Solidity tests to compile
+
+Running Solidity tests
+
+
+Running Mocha tests
+
+
+  BlokyzMinter
+    Constructor
+      Γ£ö sets nft contract address
+      Γ£ö sets signer address
+      Γ£ö paused is false by default
+      Γ£ö reverts if nft contract is zero address
+      Γ£ö reverts if signer is zero address
+    configurePhase()
+      Γ£ö owner can configure a phase
+      Γ£ö emits PhaseConfigured event
+      Γ£ö reverts if phase is NONE
+      Γ£ö reverts if endTime <= startTime
+      Γ£ö reverts if endTime < startTime
+      Γ£ö non-owner cannot configurePhase
+      Γ£ö can reconfigure phase (overwrites previous config)
+    setPhaseActive()
+      Γ£ö owner can deactivate an active phase
+      Γ£ö owner can re-activate a phase
+      Γ£ö reverts if phase is NONE
+      Γ£ö non-owner cannot setPhaseActive
+    currentPhase()
+      Γ£ö returns NONE when no phase is configured
+      Γ£ö returns NONE when phase is active=false
+      Γ£ö returns correct phase when inside time window
+      Γ£ö returns NONE when phase time window has passed
+      Γ£ö returns NONE when phase has not started yet
+      Γ£ö returns first active phase in priority order (GTD_FREE before PUBLIC)
+    Pause / Unpause
+      Γ£ö owner can pause the contract
+      Γ£ö owner can unpause
+      Γ£ö setPaused emits PausedStateChanged
+      Γ£ö non-owner cannot pause
+      Γ£ö mint reverts when paused
+      Γ£ö publicMint reverts when paused
+    setSigner()
+      Γ£ö owner can update the signer address
+      Γ£ö emits SignerUpdated event
+      Γ£ö reverts setSigner with zero address
+      Γ£ö non-owner cannot setSigner
+    setNFTContract()
+      Γ£ö owner can update the NFT contract address
+      Γ£ö emits NFTContractUpdated event (59ms)
+      Γ£ö reverts with zero address
+      Γ£ö non-owner cannot setNFTContract
+    GTD_FREE phase mint()
+      Γ£ö eligible user can mint 1 free token with valid sig
+      Γ£ö emits Minted event
+      Γ£ö records minted count in mintedPerPhase
+      Γ£ö reverts if qty is 0
+      Γ£ö reverts if wrong payment sent (sending ETH for free phase)
+      Γ£ö reverts if signature is invalid (wrong signer)
+      Γ£ö reverts if signature is for wrong wallet
+      Γ£ö reverts if signature is for wrong phase
+      Γ£ö reverts if nonce is replayed (same sig used twice)
+      Γ£ö reverts if signature has expired
+      Γ£ö reverts if wallet cap exceeded (user tries to mint 2 when cap is 1)
+      Γ£ö reverts if maxAlloc from sig is less than phase walletCap and user tries to exceed it
+      Γ£ö reverts after wallet already minted full allocation
+      Γ£ö cannot use GTD_FREE sig to call publicMint path
+      Γ£ö reverts if using publicMint with GTD_FREE-only phase active
+      Γ£ö reverts if phase time window has not started yet
+      Γ£ö reverts if phase time window has ended
+      Γ£ö reverts if phase is inactive (active=false)
+      Γ£ö cannot call mint() with PUBLIC phase (must use publicMint)
+    GTD_MINT phase mint()
+      Γ£ö eligible user can mint up to 3 tokens at 0.08 ETH each
+      Γ£ö reverts if underpaying (2 qty but 1 ETH price sent)
+      Γ£ö reverts if overpaying
+      Γ£ö mintedPerPhase is independent per phase
+    WL_FCFS phase mint()
+      Γ£ö whitelisted user can mint 2 tokens at 0.10 ETH each
+      Γ£ö WL user cannot mint more than their maxAlloc even if walletCap is higher
+      Γ£ö multiple different users can each mint their allocation
+    PUBLIC phase publicMint()
+      Γ£ö anyone can mint during public phase
+      Γ£ö can mint multiple tokens up to cap
+      Γ£ö emits Minted event with PUBLIC phase
+      Γ£ö reverts if qty is 0
+      Γ£ö reverts if wrong payment
+      Γ£ö reverts if wallet cap exceeded
+      Γ£ö does not require a signature
+      Γ£ö reverts if phase not active
+      Γ£ö partial mint accepted, further mint up to remaining cap
+      Γ£ö wallet cap is per-user: user2 can still mint even if user1 is capped
+    Nonce replay protection
+      Γ£ö isNonceUsed returns false before use
+      Γ£ö isNonceUsed returns true after mint used that nonce
+      Γ£ö same nonce cannot be used by a different user
+      Γ£ö different nonces work independently
+    withdraw()
+      Γ£ö owner can withdraw ETH from minter contract
+      Γ£ö emits Withdrawn event
+      Γ£ö reverts withdraw to zero address
+      Γ£ö reverts if insufficient balance
+      Γ£ö non-owner cannot withdraw
+      Γ£ö contract can receive ETH via receive()
+    View helpers
+      Γ£ö getMintedByPhase returns 0 before any mint
+      Γ£ö getPhaseConfig returns zero struct for unconfigured phase
+    GTD holder stacking (GTD_FREE + GTD_MINT)
+      Γ£ö GTD holder can mint 1 free + 3 paid = 4 total across both phases (50ms)
+      Γ£ö GTD holder cannot exceed phase 2 cap regardless of stacking
+    Integration: BlokyzMinter ΓåÆ BlokyzNFT
+      Γ£ö minter without NFT registration reverts
+      Γ£ö swapping minter contract works: old minter disabled, new minter works (48ms)
+      Γ£ö tokens minted through minter are sequential with existing supply
+
+  BlokyzNFT
+    Constructor
+      Γ£ö sets name and symbol correctly
+      Γ£ö sets owner correctly
+      Γ£ö reveals=false by default
+      Γ£ö totalSupply starts at 0
+      Γ£ö reverts if royaltyRecipient is zero address
+      Γ£ö reverts if royaltyBps exceeds 1000 (10%)
+      Γ£ö allows royaltyBps of exactly 1000 (boundary)
+      Γ£ö allows royaltyBps of 0
+    Admin Management
+      Γ£ö owner is considered admin via isAdmin()
+      Γ£ö non-admin is not admin
+      Γ£ö owner can approve an admin
+      Γ£ö owner can revoke an admin
+      Γ£ö reverts approveAdmin with zero address
+      Γ£ö revokeAdmin silently handles non-admin address (EnumerableSet)
+      Γ£ö non-owner cannot approveAdmin
+      Γ£ö non-owner cannot revokeAdmin
+      Γ£ö getAdmins returns list of approved admins (not owner)
+      Γ£ö getAdmins returns empty when no admins approved
+      Γ£ö getAdmins does not include owner
+      Γ£ö approving same admin twice does not duplicate
+    Minter Management
+      Γ£ö owner can set minter addresses
+      Γ£ö owner can revoke minter
+      Γ£ö setMinterAddresses emits MinterAddressSet event
+      Γ£ö reverts if address and allowed arrays have mismatched lengths
+      Γ£ö reverts if any minter address is zero
+      Γ£ö non-owner cannot setMinterAddresses
+      Γ£ö can set multiple minters at once
+    mint()
+      Γ£ö registered minter can mint tokens
+      Γ£ö owner can mint directly (acts as minter)
+      Γ£ö token IDs are sequential starting from 1
+      Γ£ö totalSupply increments correctly with batch mints
+      Γ£ö non-minter cannot call mint
+      Γ£ö reverts if qty would exceed MAX_SUPPLY
+      Γ£ö minting exactly MAX_SUPPLY is allowed (boundary)
+      Γ£ö revoked minter cannot mint
+      Γ£ö can mint to any address, not just msg.sender
+    airdrop()
+      Γ£ö owner can airdrop to multiple recipients
+      Γ£ö approved admin can airdrop (43ms)
+      Γ£ö non-admin cannot airdrop
+      Γ£ö airdrop respects MAX_SUPPLY
+      Γ£ö airdrop to a single recipient with qty 1
+      Γ£ö airdrop calculates supply as recipients.length * qtyEach
+    tokenURI() and reveal()
+      Γ£ö returns placeholderURI pre-reveal for all tokens
+      Γ£ö reverts tokenURI for non-existent token
+      Γ£ö reverts tokenURI for token 0 (never minted)
+      Γ£ö owner can reveal
+      Γ£ö admin can reveal
+      Γ£ö non-admin cannot reveal
+      Γ£ö after reveal, tokenURI returns real URI with token ID
+      Γ£ö reveal emits Revealed event
+      Γ£ö reveal emits BatchMetadataUpdate event
+      Γ£ö cannot reveal twice ΓÇö reverts AlreadyRevealed
+      Γ£ö reveal is a one-way flip ΓÇö revealed stays true forever
+    setPlaceholderURI()
+      Γ£ö admin can update placeholder before reveal
+      Γ£ö setPlaceholderURI emits BatchMetadataUpdate
+      Γ£ö non-admin cannot setPlaceholderURI
+      Γ£ö cannot setPlaceholderURI after reveal
+    Royalties
+      Γ£ö royaltyInfo returns correct recipient and amount
+      Γ£ö royaltyInfo ignores tokenId (same result for any id)
+      Γ£ö getRoyalties returns recipient and bps arrays
+      Γ£ö getFeeRecipients returns royalty recipient
+      Γ£ö getFeeBps returns royalty bps
+      Γ£ö admin can updateRoyalties
+      Γ£ö updateRoyalties emits RoyaltyUpdated event
+      Γ£ö updateRoyalties reverts with zero address
+      Γ£ö updateRoyalties reverts if bps > 1000
+      Γ£ö updateRoyalties allows exactly 1000 bps (boundary)
+      Γ£ö non-admin cannot updateRoyalties
+    supportsInterface()
+      Γ£ö supports ERC721 interface
+      Γ£ö supports ERC165 interface
+      Γ£ö supports EIP-2981 royalty interface (0x2a55205a)
+      Γ£ö supports Manifold CreatorCore royalty interface (0xbb3bafd6)
+      Γ£ö supports Rarible royalty interface (0xb7799584)
+      Γ£ö returns false for unknown interface
+    withdraw()
+      Γ£ö admin can withdraw ETH from contract
+      Γ£ö reverts withdraw to zero address
+      Γ£ö reverts if withdrawal amount exceeds balance
+      Γ£ö non-admin cannot withdraw
+      Γ£ö approved admin can withdraw
+      Γ£ö contract can receive ETH via receive()
+    MAX_SUPPLY
+      Γ£ö MAX_SUPPLY is exactly 10,000
+    ERC721 standard behavior
+      Γ£ö user can transfer their own token
+      Γ£ö user can approve another address to transfer token
+      Γ£ö approved address can transfer token
+      Γ£ö user can setApprovalForAll
+      Γ£ö balanceOf returns correct count
+      Γ£ö non-owner cannot transfer token
+
+
+  176 passing (9s)
+
+
+176 passing (176 mocha)
+
