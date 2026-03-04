@@ -1,5 +1,4 @@
 import "dotenv/config";
-import "./types/session.js";
 import express from "express";
 import session = require("express-session");
 import cors from "cors";
@@ -51,7 +50,7 @@ app.use("/auth", authRouter);
 app.use("/eligibility", requireAuth, eligibilityRouter);
 app.use("/mint", requireAuth, mintRouter);
 app.use("/claim", requireAuth, claimRouter);
-app.use("/admin", requireAuth, adminRouter);
+app.use("/admin", adminRouter);
 
 // ── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {

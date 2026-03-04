@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 import { ethers } from "ethers";
 
 const router = Router();
-const prisma = new PrismaClient();
+
 
 const NFT_ABI = [
     "function ownerOf(uint256 tokenId) view returns (address)",

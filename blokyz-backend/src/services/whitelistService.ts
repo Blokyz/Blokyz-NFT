@@ -1,6 +1,5 @@
-import { PrismaClient, Tier } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { Tier } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 
 export { Tier };
 
