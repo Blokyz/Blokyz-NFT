@@ -40,12 +40,12 @@ router.post("/signature", async (req, res) => {
         const resolvedWallet = await resolveWallet(hotWallet);
         const isDelegated = resolvedWallet !== hotWallet;
 
-        // 3. Whitelist check (skip for PUBLIC phase)
+        // 3. Get phase info (always needed for price) + whitelist check
+        const phaseInfo = await getPhaseInfo(phase);
         let maxAlloc: number;
 
         if (phase === Phase.PUBLIC) {
             // Anyone can mint — use phase walletCap
-            const phaseInfo = await getPhaseInfo(phase);
             maxAlloc = phaseInfo.walletCap;
         } else {
             // GTD_FREE, GTD_MINT, WL_FCFS — must be on the list
@@ -88,6 +88,7 @@ router.post("/signature", async (req, res) => {
         res.json({
             ...payload,
             phase: Number(payload.phase),
+            price: phaseInfo.price.toString(), // always use fresh on-chain price
             resolvedWallet: isDelegated ? resolvedWallet : undefined,
             alreadyMinted,
             remaining,

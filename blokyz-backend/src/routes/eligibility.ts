@@ -44,6 +44,8 @@ router.get("/", async (req, res) => {
         if (!entry) {
             res.json({
                 eligible: false,
+                phase: Phase[phase],
+                price: phaseInfo.price.toString(),
                 reason: isDelegated
                     ? `Vault wallet ${resolvedWallet} is not on the allowlist`
                     : "Wallet is not on the allowlist",
@@ -54,7 +56,13 @@ router.get("/", async (req, res) => {
 
         const requiredTier = phase === Phase.GTD_FREE || phase === Phase.GTD_MINT ? Tier.GTD : Tier.WL;
         if (!isTierEligible(entry, requiredTier)) {
-            res.json({ eligible: false, reason: `Wallet tier '${entry.tier}' not eligible for ${Phase[phase]}` });
+            res.json({
+                eligible: false,
+                phase: Phase[phase],
+                price: phaseInfo.price.toString(),
+                tier: entry.tier,
+                reason: `Your wallet tier (${entry.tier}) is not eligible for this phase`,
+            });
             return;
         }
 

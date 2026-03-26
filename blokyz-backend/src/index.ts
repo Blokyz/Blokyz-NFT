@@ -7,7 +7,7 @@ import helmet from "helmet";
 import { authRouter } from "./routes/auth.js";
 import { mintRouter } from "./routes/mint.js";
 import { eligibilityRouter } from "./routes/eligibility.js";
-import { claimRouter } from "./routes/claim.js";
+
 import { adminRouter } from "./routes/admin.js";
 import { requireAuth } from "./middleware/auth.js";
 import { rateLimiter } from "./middleware/rateLimit.js";
@@ -49,7 +49,7 @@ app.get("/health", (_req, res) => {
 app.use("/auth", authRouter);
 app.use("/eligibility", requireAuth, eligibilityRouter);
 app.use("/mint", requireAuth, mintRouter);
-app.use("/claim", requireAuth, claimRouter);
+
 app.use("/admin", adminRouter);
 
 // ── Start ────────────────────────────────────────────────────────────────────
