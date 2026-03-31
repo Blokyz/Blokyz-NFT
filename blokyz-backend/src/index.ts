@@ -34,6 +34,7 @@ app.use(session({
         secure: process.env.NODE_ENV === "production",
         httpOnly: true,
         maxAge: Number(process.env.SESSION_TTL ?? 86400) * 1000,
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     },
 }));
 
