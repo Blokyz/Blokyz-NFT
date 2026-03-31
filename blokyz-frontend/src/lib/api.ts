@@ -1,13 +1,25 @@
 const BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3000";
 const TOKEN_KEY = "blokyz_auth_token";
 
+// In-memory cache — survives re-renders, populated from localStorage on first read
+let _memToken: string | null = null;
+
 export const tokenStore = {
     get: (): string | null => {
-        if (typeof window === "undefined") return null;
-        return localStorage.getItem(TOKEN_KEY);
+        if (_memToken) return _memToken;
+        if (typeof window !== "undefined") {
+            _memToken = localStorage.getItem(TOKEN_KEY);
+        }
+        return _memToken;
     },
-    set: (token: string) => localStorage.setItem(TOKEN_KEY, token),
-    clear: () => localStorage.removeItem(TOKEN_KEY),
+    set: (token: string) => {
+        _memToken = token;
+        if (typeof window !== "undefined") localStorage.setItem(TOKEN_KEY, token);
+    },
+    clear: () => {
+        _memToken = null;
+        if (typeof window !== "undefined") localStorage.removeItem(TOKEN_KEY);
+    },
 };
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
