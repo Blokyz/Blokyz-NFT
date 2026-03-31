@@ -58,7 +58,17 @@ export default function MintPage() {
   const [qty, setQty] = useState(1);
 
   useEffect(() => {
-    if (authenticated) checkEligibility();
+    if (!authenticated) return;
+    // Retry up to 3 times with backoff to handle transient RPC/backend errors
+    let attempts = 0;
+    const run = async () => {
+      const result = await checkEligibility();
+      if (!result && attempts < 2) {
+        attempts++;
+        setTimeout(run, 1500 * attempts);
+      }
+    };
+    run();
   }, [authenticated, checkEligibility]);
 
   const handleMint = useCallback(async () => {
