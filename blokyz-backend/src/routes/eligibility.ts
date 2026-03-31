@@ -3,12 +3,13 @@ import { resolveWallet } from "../services/delegateService.js";
 import { getWalletEntry, isTierEligible, Tier } from "../services/whitelistService.js";
 import { getCurrentPhase, getPhaseInfo, getMintedCount } from "../services/phaseService.js";
 import { Phase } from "../services/signerService.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
 // ── GET /eligibility ──────────────────────────────────────────────────────────
 // Check wallet eligibility for the current phase (no side effects)
-router.get("/", async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
     const hotWallet = req.session.wallet as string;
 
     try {

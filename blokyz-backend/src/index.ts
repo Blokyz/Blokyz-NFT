@@ -9,7 +9,6 @@ import { mintRouter } from "./routes/mint.js";
 import { eligibilityRouter } from "./routes/eligibility.js";
 
 import { adminRouter } from "./routes/admin.js";
-import { requireAuth } from "./middleware/auth.js";
 import { rateLimiter } from "./middleware/rateLimit.js";
 
 const app = express();
@@ -48,8 +47,8 @@ app.get("/health", (_req, res) => {
 
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use("/auth", authRouter);
-app.use("/eligibility", requireAuth, eligibilityRouter);
-app.use("/mint", requireAuth, mintRouter);
+app.use("/eligibility", eligibilityRouter);
+app.use("/mint", mintRouter); // /mint/phase is public; individual routes enforce auth via requireAuth
 
 app.use("/admin", adminRouter);
 

@@ -1,9 +1,24 @@
 const BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3000";
+const TOKEN_KEY = "blokyz_auth_token";
+
+export const tokenStore = {
+    get: (): string | null => {
+        if (typeof window === "undefined") return null;
+        return localStorage.getItem(TOKEN_KEY);
+    },
+    set: (token: string) => localStorage.setItem(TOKEN_KEY, token),
+    clear: () => localStorage.removeItem(TOKEN_KEY),
+};
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+    const token = tokenStore.get();
     const res = await fetch(`${BASE}${path}`, {
         credentials: "include",
-        headers: { "Content-Type": "application/json", ...init?.headers },
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...init?.headers,
+        },
         ...init,
     });
     const data = await res.json();
@@ -16,7 +31,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 export const getNonce = () => apiFetch<{ nonce: string }>("/auth/nonce");
 
 export const verifySignature = (message: string, signature: string) =>
-    apiFetch<{ ok: boolean; wallet: string }>("/auth/verify", {
+    apiFetch<{ ok: boolean; wallet: string; token: string }>("/auth/verify", {
         method: "POST",
         body: JSON.stringify({ message, signature }),
     });

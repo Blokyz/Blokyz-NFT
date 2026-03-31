@@ -3,6 +3,7 @@ import { resolveWallet } from "../services/delegateService.js";
 import { getWalletEntry, isTierEligible, Tier } from "../services/whitelistService.js";
 import { getCurrentPhase, getPhaseInfo, getMintedCount } from "../services/phaseService.js";
 import { generateMintSignature, Phase } from "../services/signerService.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -24,7 +25,7 @@ router.get("/phase", async (_req, res) => {
 
 // ── POST /mint/signature ──────────────────────────────────────────────────────
 // Core endpoint: validates eligibility, resolves delegate, returns signed payload
-router.post("/signature", async (req, res) => {
+router.post("/signature", requireAuth, async (req, res) => {
     const hotWallet = req.session.wallet as string;
 
     try {

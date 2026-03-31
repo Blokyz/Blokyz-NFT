@@ -1,5 +1,25 @@
 import { Router } from "express";
 import { SiweMessage } from "siwe";
+import jwt from "jsonwebtoken";
+
+function jwtSecret(): string {
+    const s = process.env.JWT_SECRET;
+    if (!s) throw new Error("JWT_SECRET env var not set");
+    return s;
+}
+
+function signToken(wallet: string): string {
+    return jwt.sign({ wallet }, jwtSecret(), { expiresIn: "24h" });
+}
+
+export function verifyToken(token: string): string | null {
+    try {
+        const payload = jwt.verify(token, jwtSecret()) as { wallet: string };
+        return payload.wallet;
+    } catch {
+        return null;
+    }
+}
 
 const router = Router();
 
@@ -33,11 +53,12 @@ router.post("/verify", async (req, res) => {
             return;
         }
 
-        // Store the authenticated wallet in session
-        req.session.wallet = result.data.address.toLowerCase();
-        req.session.nonce = undefined; // clear nonce after use
+        const wallet = result.data.address.toLowerCase();
+        req.session.wallet = wallet;
+        req.session.nonce = undefined;
 
-        res.json({ ok: true, wallet: req.session.wallet });
+        const token = signToken(wallet);
+        res.json({ ok: true, wallet, token });
     } catch (err) {
         console.error("[auth] verify error:", err);
         res.status(401).json({ error: "Authentication failed" });
@@ -53,11 +74,23 @@ router.post("/logout", (req, res) => {
 
 // ── GET /auth/me ──────────────────────────────────────────────────────────────
 router.get("/me", (req, res) => {
-    if (!req.session?.wallet) {
-        res.status(401).json({ authenticated: false });
+    // Check session first, then JWT header
+    const sessionWallet = req.session?.wallet as string | undefined;
+    if (sessionWallet) {
+        res.json({ authenticated: true, wallet: sessionWallet });
         return;
     }
-    res.json({ authenticated: true, wallet: req.session.wallet });
+
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+        const wallet = verifyToken(authHeader.slice(7));
+        if (wallet) {
+            res.json({ authenticated: true, wallet });
+            return;
+        }
+    }
+
+    res.status(401).json({ authenticated: false });
 });
 
 export { router as authRouter };

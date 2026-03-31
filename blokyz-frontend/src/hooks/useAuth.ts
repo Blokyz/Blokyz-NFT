@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { SiweMessage } from "siwe";
-import { getNonce, verifySignature, getMe, logout as apiLogout } from "@/lib/api";
+import { getNonce, verifySignature, getMe, logout as apiLogout, tokenStore } from "@/lib/api";
 import { CHAIN } from "@/lib/contracts";
 
 export interface AuthState {
@@ -29,18 +29,35 @@ export function useAuth(): AuthState {
     const attemptedAddress = useRef<string | null>(null);
     const signingIn = useRef(false);
 
-    // Check session on mount
+    // Check session on mount — JWT in localStorage takes priority over cookie session
     useEffect(() => {
-        getMe()
-            .then((me) => {
-                setAuthenticated(me.authenticated);
-                setWallet(me.wallet ?? null);
-            })
-            .catch(() => {
-                setAuthenticated(false);
-                setWallet(null);
-            })
-            .finally(() => setLoading(false));
+        const token = tokenStore.get();
+        if (token) {
+            // Validate token with server (also works as a keepalive check)
+            getMe()
+                .then((me) => {
+                    if (me.authenticated) {
+                        setAuthenticated(true);
+                        setWallet(me.wallet ?? null);
+                    } else {
+                        tokenStore.clear();
+                    }
+                })
+                .catch(() => tokenStore.clear())
+                .finally(() => setLoading(false));
+        } else {
+            // No token — check cookie session as fallback
+            getMe()
+                .then((me) => {
+                    setAuthenticated(me.authenticated);
+                    setWallet(me.wallet ?? null);
+                })
+                .catch(() => {
+                    setAuthenticated(false);
+                    setWallet(null);
+                })
+                .finally(() => setLoading(false));
+        }
     }, []);
 
     const signIn = useCallback(async () => {
@@ -67,6 +84,7 @@ export function useAuth(): AuthState {
             });
 
             const result = await verifySignature(message.prepareMessage(), signature);
+            if (result.token) tokenStore.set(result.token);
             setAuthenticated(result.ok);
             setWallet(result.wallet);
         } catch (err: unknown) {
@@ -100,6 +118,7 @@ export function useAuth(): AuthState {
     }, [address]);
 
     const signOut = useCallback(async () => {
+        tokenStore.clear();
         await apiLogout();
         setAuthenticated(false);
         setWallet(null);
