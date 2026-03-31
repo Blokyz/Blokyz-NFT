@@ -58,6 +58,7 @@ export function useMint() {
                     functionName: "publicMint",
                     args: [BigInt(qty)],
                     value: priceWei,
+                    gas: 500_000n,
                 });
             } else {
                 hash = await writeContractAsync({
@@ -73,6 +74,7 @@ export function useMint() {
                         sig.signature as `0x${string}`,
                     ],
                     value: priceWei,
+                    gas: 500_000n,
                 });
             }
 
