@@ -62,9 +62,10 @@ router.post("/signature", requireAuth, async (req, res) => {
             }
 
             // Check tier eligibility for current phase
-            const requiredTier = phase === Phase.GTD_FREE || phase === Phase.GTD_MINT
-                ? Tier.GTD
-                : Tier.WL;
+            const requiredTier =
+                phase === Phase.GTD_FREE ? Tier.GTD_FREE :
+                phase === Phase.GTD_MINT ? Tier.GTD_MINT :
+                Tier.WL; // WL_FCFS
 
             if (!isTierEligible(entry, requiredTier)) {
                 res.status(403).json({ error: `Wallet tier '${entry.tier}' not eligible for current phase` });

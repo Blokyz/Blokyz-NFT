@@ -55,7 +55,10 @@ router.get("/", requireAuth, async (req, res) => {
             return;
         }
 
-        const requiredTier = phase === Phase.GTD_FREE || phase === Phase.GTD_MINT ? Tier.GTD : Tier.WL;
+        const requiredTier =
+            phase === Phase.GTD_FREE ? Tier.GTD_FREE :
+            phase === Phase.GTD_MINT ? Tier.GTD_MINT :
+            Tier.WL; // WL_FCFS
         if (!isTierEligible(entry, requiredTier)) {
             res.json({
                 eligible: false,

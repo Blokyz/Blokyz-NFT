@@ -23,6 +23,7 @@ model WalletEntry {
 }
 
 enum Tier {
-  GTD
-  WL
+  GTD_FREE  // access: GTD_FREE, GTD_MINT, WL_FCFS, PUBLIC
+  GTD_MINT  // access: GTD_MINT, WL_FCFS, PUBLIC
+  WL        // access: WL_FCFS, PUBLIC
 }

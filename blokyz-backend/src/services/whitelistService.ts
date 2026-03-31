@@ -24,14 +24,25 @@ export async function getWalletEntry(address: string): Promise<WalletAllocation 
 }
 
 /**
- * Check if a wallet is eligible for a given tier.
- * GTD wallets are eligible for both GTD and WL phases.
+ * Tier hierarchy (highest → lowest access):
+ *   GTD_FREE  → eligible for GTD_FREE, GTD_MINT, WL_FCFS, PUBLIC
+ *   GTD_MINT  → eligible for              GTD_MINT, WL_FCFS, PUBLIC
+ *   WL        → eligible for                         WL_FCFS, PUBLIC
+ *
+ * requiredTier = the minimum tier needed to enter the current phase.
  */
 export function isTierEligible(entry: WalletAllocation, requiredTier: Tier): boolean {
-    if (requiredTier === Tier.WL) {
-        return entry.tier === Tier.GTD || entry.tier === Tier.WL;
+    switch (requiredTier) {
+        case Tier.GTD_FREE:
+            // Only GTD_FREE wallets can enter the GTD_FREE phase
+            return entry.tier === Tier.GTD_FREE;
+        case Tier.GTD_MINT:
+            // GTD_FREE and GTD_MINT wallets can enter the GTD_MINT phase
+            return entry.tier === Tier.GTD_FREE || entry.tier === Tier.GTD_MINT;
+        case Tier.WL:
+            // All tiers can enter the WL phase
+            return true;
     }
-    return entry.tier === Tier.GTD;
 }
 
 /**

@@ -9,16 +9,20 @@ import "dotenv/config";
 import { prisma } from "../src/lib/prisma.ts";
 
 
-const WALLETS: { address: string; tier: "GTD" | "WL"; maxAlloc: number; notes?: string }[] = [
-    { address: "0xFA3be61d7A66D9A2AB0Aa6E0aedab9504e544Fe1", tier: "WL", maxAlloc: 1 },
-    { address: "0x6Bd6e1C17547f88E432880Da700dc37406e3D500", tier: "WL", maxAlloc: 1 },
-    { address: "0xc3dB6201B40e973D7A42D9CF5A2Ebed37Fe8bE05", tier: "WL", maxAlloc: 1 },
-    { address: "0x4Fd38cc6d16B7124909F5f64DD389DC85bba1200", tier: "GTD", maxAlloc: 2 },
-    { address: "0x348D130F280a2dA7E98f2e4aB724C2E53FF2CC8e", tier: "GTD", maxAlloc: 2 },
-    { address: "0xC3De3889E88f195DF0630aaA73Ba1967cef6e463", tier: "GTD", maxAlloc: 2 },
-    { address: "0x44451064815D1fD826233dcFb1BAB271bF3E6E75", tier: "GTD", maxAlloc: 2 },
-    { address: "0x118F91c393cefE88e08754Cd61bA51a750098eDA", tier: "GTD", maxAlloc: 2 },
-    { address: "0xcfe6959F676C71764b3a6a5b7E6281508Ee052E8", tier: "GTD", maxAlloc: 2 },
+// Tier access:
+//   GTD_FREE  → GTD_FREE phase, GTD_MINT phase, WL phase, PUBLIC
+//   GTD_MINT  → GTD_MINT phase, WL phase, PUBLIC  (NOT GTD_FREE phase)
+//   WL        → WL phase, PUBLIC only
+const WALLETS: { address: string; tier: "GTD_FREE" | "GTD_MINT" | "WL"; maxAlloc: number; notes?: string }[] = [
+    { address: "0xFA3be61d7A66D9A2AB0Aa6E0aedab9504e544Fe1", tier: "WL",       maxAlloc: 1 },
+    { address: "0x6Bd6e1C17547f88E432880Da700dc37406e3D500", tier: "WL",       maxAlloc: 1 },
+    { address: "0xc3dB6201B40e973D7A42D9CF5A2Ebed37Fe8bE05", tier: "WL",       maxAlloc: 1 },
+    { address: "0x4Fd38cc6d16B7124909F5f64DD389DC85bba1200", tier: "GTD_FREE", maxAlloc: 2 },
+    { address: "0x348D130F280a2dA7E98f2e4aB724C2E53FF2CC8e", tier: "GTD_FREE", maxAlloc: 2 },
+    { address: "0xC3De3889E88f195DF0630aaA73Ba1967cef6e463", tier: "GTD_FREE", maxAlloc: 2 },
+    { address: "0x44451064815D1fD826233dcFb1BAB271bF3E6E75", tier: "GTD_MINT", maxAlloc: 2 },
+    { address: "0x118F91c393cefE88e08754Cd61bA51a750098eDA", tier: "GTD_MINT", maxAlloc: 2 },
+    { address: "0xcfe6959F676C71764b3a6a5b7E6281508Ee052E8", tier: "GTD_MINT", maxAlloc: 2 },
 ];
 
 
