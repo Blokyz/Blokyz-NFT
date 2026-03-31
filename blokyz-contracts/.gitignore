@@ -21,3 +21,6 @@
 
 # Environment variables — private keys, NEVER commit
 .env
+
+# Generated IPFS metadata — already uploaded to Lighthouse, not needed in Git
+/scripts/metadata

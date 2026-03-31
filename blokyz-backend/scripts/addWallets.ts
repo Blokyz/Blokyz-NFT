@@ -17,6 +17,8 @@ const WALLETS: { address: string; tier: "GTD" | "WL"; maxAlloc: number; notes?: 
     { address: "0x348D130F280a2dA7E98f2e4aB724C2E53FF2CC8e", tier: "GTD", maxAlloc: 2 },
     { address: "0xC3De3889E88f195DF0630aaA73Ba1967cef6e463", tier: "GTD", maxAlloc: 2 },
     { address: "0x44451064815D1fD826233dcFb1BAB271bF3E6E75", tier: "GTD", maxAlloc: 2 },
+    { address: "0x118F91c393cefE88e08754Cd61bA51a750098eDA", tier: "GTD", maxAlloc: 2 },
+    { address: "0xcfe6959F676C71764b3a6a5b7E6281508Ee052E8", tier: "GTD", maxAlloc: 2 },
 ];
 
 

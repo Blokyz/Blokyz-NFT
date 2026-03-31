@@ -73,7 +73,10 @@ export default function CollectionPage() {
               {revealed ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={`https://ipfs.io/ipfs/YOUR_CID/${id}.png`}
+                  src={`https://ipfs.io/ipfs/bafkreicdbw4rdntfsvhhfde2dznwas7t4taxzutudejrarnyoweh6omzaa`}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `https://dweb.link/ipfs/bafkreicdbw4rdntfsvhhfde2dznwas7t4taxzutudejrarnyoweh6omzaa`;
+                  }}
                   alt={`Blokyz #${id}`}
                   loading="lazy"
                 />
