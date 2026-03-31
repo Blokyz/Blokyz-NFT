@@ -24,51 +24,36 @@ export function useAuth(): AuthState {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Tracks which address has already had a sign-in attempted so the auto-effect
-    // never retries automatically — the user must click "Try Again" manually.
-    const attemptedAddress = useRef<string | null>(null);
     const signingIn = useRef(false);
+    // Tracks which address we've already attempted auto sign-in for
+    const attemptedForAddress = useRef<string | null>(null);
+    // Tracks previous address to detect wallet switches vs initial connect
+    const prevAddress = useRef<string | undefined>(undefined);
 
-    // Check session on mount — JWT in localStorage takes priority over cookie session
+    // ── On mount: validate existing JWT / session ────────────────────────────
     useEffect(() => {
-        const token = tokenStore.get();
-        if (token) {
-            // Validate token with server (also works as a keepalive check)
-            getMe()
-                .then((me) => {
-                    if (me.authenticated) {
-                        setAuthenticated(true);
-                        setWallet(me.wallet ?? null);
-                    } else {
-                        tokenStore.clear();
-                    }
-                })
-                .catch(() => tokenStore.clear())
-                .finally(() => setLoading(false));
-        } else {
-            // No token — check cookie session as fallback
-            getMe()
-                .then((me) => {
-                    setAuthenticated(me.authenticated);
+        getMe()
+            .then((me) => {
+                if (me.authenticated) {
+                    setAuthenticated(true);
                     setWallet(me.wallet ?? null);
-                })
-                .catch(() => {
-                    setAuthenticated(false);
-                    setWallet(null);
-                })
-                .finally(() => setLoading(false));
-        }
+                } else {
+                    tokenStore.clear();
+                }
+            })
+            .catch(() => tokenStore.clear())
+            .finally(() => setLoading(false));
     }, []);
 
+    // ── signIn ───────────────────────────────────────────────────────────────
     const signIn = useCallback(async () => {
-        if (!address) throw new Error("No wallet connected");
+        if (!address) return;
         if (signingIn.current) return;
         signingIn.current = true;
         setLoading(true);
         setError(null);
         try {
             const { nonce } = await getNonce();
-
             const message = new SiweMessage({
                 domain: window.location.host,
                 address,
@@ -78,18 +63,14 @@ export function useAuth(): AuthState {
                 chainId: CHAIN.id,
                 nonce,
             });
-
-            const signature = await signMessageAsync({
-                message: message.prepareMessage(),
-            });
-
+            const signature = await signMessageAsync({ message: message.prepareMessage() });
             const result = await verifySignature(message.prepareMessage(), signature);
             if (result.token) tokenStore.set(result.token);
             setAuthenticated(result.ok);
             setWallet(result.wallet);
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Sign-in failed";
-            // Ignore wallet rejections — user cancelled intentionally
+            // Swallow intentional wallet rejections — user dismissed the prompt
             if (!msg.toLowerCase().includes("rejected") && !msg.toLowerCase().includes("denied")) {
                 setError(msg);
             }
@@ -99,27 +80,41 @@ export function useAuth(): AuthState {
         }
     }, [address, signMessageAsync]);
 
-    // Auto sign-in once per address after the session check resolves.
-    // Uses attemptedAddress ref to avoid retrying on every render — if it fails
-    // the user must click "Try Again" manually.
+    // ── Auto sign-in: fires once per address after session check resolves ────
     useEffect(() => {
-        if (!address || loading || authenticated) return;
-        if (attemptedAddress.current === address) return;
-        attemptedAddress.current = address;
-        signIn();
-    }, [address, loading, signIn]);
+        // Wait for the session check to finish
+        if (loading) return;
+        // Already authenticated — nothing to do
+        if (authenticated) return;
+        // No wallet connected
+        if (!address) return;
+        // Already tried for this address — don't retry (user must click Try Again)
+        if (attemptedForAddress.current === address) return;
 
-    // Reset attempted flag when address changes (wallet switch)
+        attemptedForAddress.current = address;
+        signIn();
+    }, [address, loading, authenticated, signIn]);
+
+    // ── Handle wallet switch (address changes to a different value) ──────────
     useEffect(() => {
-        attemptedAddress.current = null;
-        setError(null);
-        setAuthenticated(false);
-        setWallet(null);
+        const prev = prevAddress.current;
+        prevAddress.current = address;
+
+        // Only reset when switching from one address to another — not on initial connect
+        if (prev !== undefined && prev !== address) {
+            setAuthenticated(false);
+            setWallet(null);
+            setError(null);
+            tokenStore.clear();
+            attemptedForAddress.current = null;
+        }
     }, [address]);
 
+    // ── Sign out ─────────────────────────────────────────────────────────────
     const signOut = useCallback(async () => {
         tokenStore.clear();
-        await apiLogout();
+        attemptedForAddress.current = null;
+        await apiLogout().catch(() => { });
         setAuthenticated(false);
         setWallet(null);
     }, []);
