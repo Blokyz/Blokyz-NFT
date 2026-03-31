@@ -72,11 +72,14 @@ export function useAuth(): AuthState {
         }
     }, [address, signMessageAsync]);
 
-    // Auto sign-in when wallet connects — only fires if not already signing in
+    // Auto sign-in when wallet connects or once the session check resolves.
+    // Must depend on `loading` too: if wagmi auto-reconnects (address already set
+    // on mount), the address dep fires while loading=true and is skipped; we need
+    // to re-run once loading flips to false.
     useEffect(() => {
         if (!address || loading || authenticated) return;
         signIn().catch(() => { }); // silently ignore wallet rejection
-    }, [address]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [address, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const signOut = useCallback(async () => {
         await apiLogout();
