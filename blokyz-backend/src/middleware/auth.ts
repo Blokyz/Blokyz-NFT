@@ -11,12 +11,15 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
     // 2. Authorization: Bearer <jwt> (cross-origin, privacy browsers)
     const authHeader = req.headers.authorization;
+    console.log(`[auth] ${req.method} ${req.path} — session: ${!!req.session?.wallet} header: ${authHeader ? authHeader.slice(0, 30) + "…" : "none"}`);
+
     if (authHeader?.startsWith("Bearer ")) {
         const wallet = verifyToken(authHeader.slice(7));
         if (wallet) {
-            req.session.wallet = wallet; // hydrate session for downstream handlers
+            req.session.wallet = wallet;
             return next();
         }
+        console.log("[auth] JWT verification failed — invalid or expired token");
     }
 
     res.status(401).json({ error: "Not authenticated. Sign in with Ethereum first." });
