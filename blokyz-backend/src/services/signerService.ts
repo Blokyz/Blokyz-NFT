@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 
 // Phase enum matching the contract exactly
 export enum Phase {
@@ -34,7 +34,7 @@ export async function generateMintSignature(
 
     const signer = new ethers.Wallet(privateKey);
 
-    const nonce = uuidv4();
+    const nonce = randomUUID();
     const expiry = Math.floor(Date.now() / 1000) + EXPIRY_SECONDS;
 
     // Match contract: keccak256(abi.encodePacked(wallet, phase, maxAlloc, expiry, nonce))
