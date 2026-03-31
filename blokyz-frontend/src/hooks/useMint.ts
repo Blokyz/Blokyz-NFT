@@ -39,6 +39,11 @@ export function useMint() {
         setTxHash(null);
 
         try {
+            // Guard: ensure contract addresses are configured
+            if (!MINTER_ADDRESS || !MINTER_ADDRESS.startsWith("0x")) {
+                throw new Error("Minter contract address not configured — contact support");
+            }
+
             // 1. Get signature from backend
             const sig = await getMintSignature();
 
@@ -80,8 +85,11 @@ export function useMint() {
 
             setTxHash(hash);
 
-            // 4. Wait for confirmation
-            await publicClient?.waitForTransactionReceipt({ hash });
+            // 4. Wait for confirmation and verify it didn't revert
+            const receipt = await publicClient?.waitForTransactionReceipt({ hash });
+            if (receipt?.status === "reverted") {
+                throw new Error("Transaction reverted on-chain — check phase timing or eligibility");
+            }
             setStatus("success");
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Transaction failed";
