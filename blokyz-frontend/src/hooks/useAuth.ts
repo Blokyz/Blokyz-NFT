@@ -10,6 +10,7 @@ export interface AuthState {
     authenticated: boolean;
     wallet: string | null;
     loading: boolean;
+    error: string | null;
     signIn: () => Promise<void>;
     signOut: () => Promise<void>;
 }
@@ -21,10 +22,11 @@ export function useAuth(): AuthState {
     const [authenticated, setAuthenticated] = useState(false);
     const [wallet, setWallet] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // Prevents two concurrent signIn() calls from racing and producing a nonce mismatch.
-    // Without this, auto-sign-in and a manual trigger can each fetch a different nonce,
-    // the session stores only the latest, and the SIWE verify fails.
+    // Tracks which address has already had a sign-in attempted so the auto-effect
+    // never retries automatically — the user must click "Try Again" manually.
+    const attemptedAddress = useRef<string | null>(null);
     const signingIn = useRef(false);
 
     // Check session on mount
@@ -43,9 +45,10 @@ export function useAuth(): AuthState {
 
     const signIn = useCallback(async () => {
         if (!address) throw new Error("No wallet connected");
-        if (signingIn.current) return; // already in progress — drop duplicate call
+        if (signingIn.current) return;
         signingIn.current = true;
         setLoading(true);
+        setError(null);
         try {
             const { nonce } = await getNonce();
 
@@ -66,20 +69,35 @@ export function useAuth(): AuthState {
             const result = await verifySignature(message.prepareMessage(), signature);
             setAuthenticated(result.ok);
             setWallet(result.wallet);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Sign-in failed";
+            // Ignore wallet rejections — user cancelled intentionally
+            if (!msg.toLowerCase().includes("rejected") && !msg.toLowerCase().includes("denied")) {
+                setError(msg);
+            }
         } finally {
             setLoading(false);
             signingIn.current = false;
         }
     }, [address, signMessageAsync]);
 
-    // Auto sign-in when wallet connects or once the session check resolves.
-    // Must depend on `loading` too: if wagmi auto-reconnects (address already set
-    // on mount), the address dep fires while loading=true and is skipped; we need
-    // to re-run once loading flips to false.
+    // Auto sign-in once per address after the session check resolves.
+    // Uses attemptedAddress ref to avoid retrying on every render — if it fails
+    // the user must click "Try Again" manually.
     useEffect(() => {
         if (!address || loading || authenticated) return;
-        signIn().catch(() => { }); // silently ignore wallet rejection
-    }, [address, loading]); // eslint-disable-line react-hooks/exhaustive-deps
+        if (attemptedAddress.current === address) return;
+        attemptedAddress.current = address;
+        signIn();
+    }, [address, loading, signIn]);
+
+    // Reset attempted flag when address changes (wallet switch)
+    useEffect(() => {
+        attemptedAddress.current = null;
+        setError(null);
+        setAuthenticated(false);
+        setWallet(null);
+    }, [address]);
 
     const signOut = useCallback(async () => {
         await apiLogout();
@@ -87,5 +105,5 @@ export function useAuth(): AuthState {
         setWallet(null);
     }, []);
 
-    return { authenticated, wallet, loading, signIn, signOut };
+    return { authenticated, wallet, loading, error, signIn, signOut };
 }

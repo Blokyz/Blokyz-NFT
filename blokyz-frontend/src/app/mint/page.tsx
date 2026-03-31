@@ -53,8 +53,8 @@ function CountdownBar({ upcoming = false }: { upcoming?: boolean }) {
 
 export default function MintPage() {
   const { isConnected } = useAccount();
-  const { authenticated, loading: authLoading } = useAuth();
-  const { status, txHash, error, eligibility, checkEligibility, mint, reset } = useMint();
+  const { authenticated, loading: authLoading, error: authError, signIn } = useAuth();
+  const { status, txHash, error: mintError, eligibility, checkEligibility, mint, reset } = useMint();
   const [qty, setQty] = useState(1);
 
   useEffect(() => {
@@ -77,13 +77,21 @@ export default function MintPage() {
     </div>
   );
 
-  // ── Connected but not signed in (auto-signing in progress)
-  if (!authenticated) return (
-    <div className={styles.center}>
-      <span className="spinner" style={{ width: 40, height: 40 }} />
-      <p className="muted" style={{ marginTop: 16 }}>Signing in to Blokyz...</p>
-    </div>
-  );
+  // ── Connected but not signed in
+  if (!authenticated) {
+    if (authError) return (
+      <div className={styles.center}>
+        <p style={{ color: "#ef4444", marginBottom: 8 }}>Sign-in failed: {authError}</p>
+        <button className="btn btn-primary" onClick={signIn}>Try Again</button>
+      </div>
+    );
+    return (
+      <div className={styles.center}>
+        <span className="spinner" style={{ width: 40, height: 40 }} />
+        <p className="muted" style={{ marginTop: 16 }}>Signing in to Blokyz...</p>
+      </div>
+    );
+  }
 
 
   // ── Success
@@ -183,9 +191,9 @@ export default function MintPage() {
         )}
 
         {/* Error */}
-        {error && (
+        {mintError && (
           <div className={`card ${styles.errorCard}`}>
-            <p>❌ {error}</p>
+            <p>❌ {mintError}</p>
             <button className="btn btn-outline" style={{ marginTop: 12, fontSize: "0.8rem" }} onClick={() => { reset(); checkEligibility(); }}>
               Try Again
             </button>
