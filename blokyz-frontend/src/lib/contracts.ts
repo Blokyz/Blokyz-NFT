@@ -3,8 +3,13 @@ import { sepolia, mainnet } from "wagmi/chains";
 export const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? "11155111");
 export const CHAIN = CHAIN_ID === 1 ? mainnet : sepolia;
 
-export const NFT_ADDRESS = process.env.NEXT_PUBLIC_NFT_CONTRACT as `0x${string}`;
-export const MINTER_ADDRESS = process.env.NEXT_PUBLIC_MINTER_CONTRACT as `0x${string}`;
+export const NFT_ADDRESS = (
+    process.env.NEXT_PUBLIC_NFT_CONTRACT ?? "0x7D6DEBc44505A38C3b0f5490D0BC408Fa2aF8398"
+) as `0x${string}`;
+
+export const MINTER_ADDRESS = (
+    process.env.NEXT_PUBLIC_MINTER_CONTRACT ?? "0x004563dc4D5f90263192861330ab653FBE632Ff9"
+) as `0x${string}`;
 export const IS_REVEALED = process.env.NEXT_PUBLIC_REVEALED === "true";
 
 // ── ABIs ────────────────────────────────────────────────────────────────────

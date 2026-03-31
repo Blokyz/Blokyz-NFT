@@ -43,6 +43,7 @@ export function useMint() {
             if (!MINTER_ADDRESS || !MINTER_ADDRESS.startsWith("0x")) {
                 throw new Error("Minter contract address not configured — contact support");
             }
+            console.log("[mint] using minter:", MINTER_ADDRESS);
 
             // 1. Get signature from backend
             const sig = await getMintSignature();
