@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import { prisma } from "../lib/prisma";
+import { Prisma } from "@prisma/client";
 
 const NFT_ABI = [
     "function ownerOf(uint256 tokenId) view returns (address)",
@@ -13,6 +14,15 @@ const OWNER_SCAN_CACHE_TTL_MS = Number(process.env.OWNER_SCAN_CACHE_TTL_MS ?? "1
 const providerCache = new Map<string, ethers.JsonRpcProvider>();
 const contractCache = new Map<string, ethers.Contract>();
 const ownershipCache = new Map<string, { tokenIds: number[]; fetchedAt: number; totalSupply: number }>();
+
+function isPublishedTokenTableMissingError(err: unknown): boolean {
+    return (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2021" &&
+        typeof err.meta?.table === "string" &&
+        err.meta.table.includes("PublishedToken")
+    );
+}
 
 function getProvider(): ethers.JsonRpcProvider {
     const chainId = process.env.CHAIN_ID ?? "11155111";
@@ -37,11 +47,19 @@ function getNftContract(): ethers.Contract {
 }
 
 export async function getPublishedTokenIds(): Promise<number[]> {
-    const rows = await prisma.publishedToken.findMany({
-        orderBy: { tokenId: "asc" },
-        select: { tokenId: true },
-    });
-    return rows.map((row) => row.tokenId);
+    try {
+        const rows = await prisma.publishedToken.findMany({
+            orderBy: { tokenId: "asc" },
+            select: { tokenId: true },
+        });
+        return rows.map((row) => row.tokenId);
+    } catch (err) {
+        if (isPublishedTokenTableMissingError(err)) {
+            // Allow profile to load even if the publish table migration is still pending.
+            return [];
+        }
+        throw err;
+    }
 }
 
 export async function isCollectionRevealLive(): Promise<boolean> {
@@ -57,18 +75,25 @@ export async function isOwnerOfToken(tokenId: number, wallet: string): Promise<b
 
 export async function publishToken(tokenId: number, wallet: string): Promise<{ tokenId: number; publisher: string; created: boolean }> {
     const normalizedWallet = wallet.toLowerCase();
-    const existing = await prisma.publishedToken.findUnique({ where: { tokenId } });
-    if (existing) {
-        return { tokenId: existing.tokenId, publisher: existing.publisher, created: false };
-    }
+    try {
+        const existing = await prisma.publishedToken.findUnique({ where: { tokenId } });
+        if (existing) {
+            return { tokenId: existing.tokenId, publisher: existing.publisher, created: false };
+        }
 
-    const created = await prisma.publishedToken.create({
-        data: {
-            tokenId,
-            publisher: normalizedWallet,
-        },
-    });
-    return { tokenId: created.tokenId, publisher: created.publisher, created: true };
+        const created = await prisma.publishedToken.create({
+            data: {
+                tokenId,
+                publisher: normalizedWallet,
+            },
+        });
+        return { tokenId: created.tokenId, publisher: created.publisher, created: true };
+    } catch (err) {
+        if (isPublishedTokenTableMissingError(err)) {
+            throw new Error("Publish storage not ready yet. Please try again in a moment.");
+        }
+        throw err;
+    }
 }
 
 export async function getOwnedTokenIdsByWallet(wallet: string): Promise<number[]> {
