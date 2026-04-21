@@ -1,12 +1,16 @@
  "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { IS_REVEALED } from "@/lib/contracts";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { usePublicClient } from "wagmi";
+import { getPublishedTokens } from "@/lib/api";
+import { NFT_ABI, NFT_ADDRESS } from "@/lib/contracts";
 import styles from "./page.module.css";
 
 const TOTAL_SUPPLY = 10_000;
 const PER_PAGE     = 50;
 const TOTAL_PAGES  = Math.ceil(TOTAL_SUPPLY / PER_PAGE); // 200
+const NFT_IMAGE_URL = "https://ipfs.io/ipfs/bafkreicdbw4rdntfsvhhfde2dznwas7t4taxzutudejrarnyoweh6omzaa";
+const NFT_IMAGE_FALLBACK_URL = "https://dweb.link/ipfs/bafkreicdbw4rdntfsvhhfde2dznwas7t4taxzutudejrarnyoweh6omzaa";
 
 // How many page buttons to show around the current page
 const SIBLINGS = 2;
@@ -26,8 +30,46 @@ function getPageRange(current: number, total: number): (number | "...")[] {
 }
 
 export default function CollectionPage() {
-  const revealed = IS_REVEALED;
+  const publicClient = usePublicClient();
   const [page, setPage] = useState(1);
+  const [onchainRevealLive, setOnchainRevealLive] = useState(false);
+  const [publishedSet, setPublishedSet] = useState<Set<number>>(new Set());
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async (silent = false) => {
+      if (!publicClient) return;
+      if (!silent) setLoading(true);
+      try {
+        const [published, revealLive] = await Promise.all([
+          getPublishedTokens(),
+          publicClient.readContract({
+            address: NFT_ADDRESS,
+            abi: NFT_ABI,
+            functionName: "revealed",
+          }) as Promise<boolean>,
+        ]);
+        if (!mounted) return;
+        setPublishedSet(new Set(published.tokenIds));
+        setOnchainRevealLive(Boolean(revealLive));
+      } catch {
+        if (!mounted) return;
+        setPublishedSet(new Set());
+        setOnchainRevealLive(false);
+      } finally {
+        if (mounted && !silent) setLoading(false);
+      }
+    };
+    load();
+    const refresh = setInterval(() => {
+      load(true);
+    }, 15_000);
+    return () => {
+      mounted = false;
+      clearInterval(refresh);
+    };
+  }, [publicClient]);
 
   const startId = (page - 1) * PER_PAGE + 1;
   const endId   = Math.min(page * PER_PAGE, TOTAL_SUPPLY);
@@ -49,10 +91,16 @@ export default function CollectionPage() {
       <div className={styles.header}>
         <h1 className={`display ${styles.heading}`}>EXPLORE COLLECTION</h1>
         <p className="muted">10,000 Blokyz Phygital NFTs</p>
-        {!revealed && (
+        {!onchainRevealLive && (
           <div className={styles.revealBanner}>
             <span>🔒</span>
             <span>Collection is unrevealed — stay tuned for the reveal!</span>
+          </div>
+        )}
+        {onchainRevealLive && (
+          <div className={styles.revealBanner}>
+            <span>👤</span>
+            <span>On-chain reveal is live. NFTs appear here after owners publish from Profile.</span>
           </div>
         )}
       </div>
@@ -64,35 +112,39 @@ export default function CollectionPage() {
         </span>
         <span className="muted">Page {page} / {TOTAL_PAGES}</span>
       </div>
+      {loading && <p className="muted" style={{ marginBottom: 12 }}>Loading published NFTs...</p>}
 
       {/* Grid */}
       <div className={styles.grid}>
-        {ids.map((id) => (
-          <div key={id} className={styles.nftCard}>
-            <div className={styles.cardImage}>
-              {revealed ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`https://ipfs.io/ipfs/bafkreicdbw4rdntfsvhhfde2dznwas7t4taxzutudejrarnyoweh6omzaa`}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = `https://dweb.link/ipfs/bafkreicdbw4rdntfsvhhfde2dznwas7t4taxzutudejrarnyoweh6omzaa`;
-                  }}
-                  alt={`Blokyz #${id}`}
-                  loading="lazy"
-                />
-              ) : (
-                <div className={styles.mystery}>
-                  <span className={styles.mysteryIcon}>🧱</span>
-                  <span className={`display ${styles.mysteryLabel}`}>?</span>
-                </div>
-              )}
+        {ids.map((id) => {
+          const visible = onchainRevealLive && publishedSet.has(id);
+          return (
+            <div key={id} className={styles.nftCard}>
+              <div className={styles.cardImage}>
+                {visible ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={NFT_IMAGE_URL}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = NFT_IMAGE_FALLBACK_URL;
+                    }}
+                    alt={`Blokyz #${id}`}
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className={styles.mystery}>
+                    <span className={styles.mysteryIcon}>🧱</span>
+                    <span className={`display ${styles.mysteryLabel}`}>?</span>
+                  </div>
+                )}
+              </div>
+              <div className={styles.cardInfo}>
+                <span className={`display ${styles.cardName}`}>Blokyz #{id}</span>
+                {!visible && <span className="muted" style={{ fontSize: "0.75rem" }}>Unrevealed</span>}
+              </div>
             </div>
-            <div className={styles.cardInfo}>
-              <span className={`display ${styles.cardName}`}>Blokyz #{id}</span>
-              {!revealed && <span className="muted" style={{ fontSize: "0.75rem" }}>Unrevealed</span>}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Pagination */}

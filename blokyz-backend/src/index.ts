@@ -7,6 +7,7 @@ import helmet from "helmet";
 import { authRouter } from "./routes/auth.js";
 import { mintRouter } from "./routes/mint.js";
 import { eligibilityRouter } from "./routes/eligibility.js";
+import { profileRouter } from "./routes/profile.js";
 
 import { adminRouter } from "./routes/admin.js";
 import { rateLimiter } from "./middleware/rateLimit.js";
@@ -60,6 +61,7 @@ app.get("/health", (_req, res) => {
 app.use("/auth", authRouter);
 app.use("/eligibility", eligibilityRouter);
 app.use("/mint", mintRouter); // /mint/phase is public; individual routes enforce auth via requireAuth
+app.use("/profile", profileRouter);
 
 app.use("/admin", adminRouter);
 

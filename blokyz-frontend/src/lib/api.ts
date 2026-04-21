@@ -33,8 +33,20 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
         },
         ...init,
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? "Request failed");
+    const raw = await res.text();
+    let data: unknown = null;
+    try {
+        data = raw ? JSON.parse(raw) : null;
+    } catch {
+        data = null;
+    }
+    if (!res.ok) {
+        const errorMessage =
+            (data && typeof data === "object" && "error" in data && typeof data.error === "string")
+                ? data.error
+                : `Request failed (${res.status})`;
+        throw new Error(errorMessage);
+    }
     return data as T;
 }
 
@@ -98,4 +110,33 @@ export interface PhaseInfo {
 }
 
 export const getMintPhase = () => apiFetch<PhaseInfo>("/mint/phase");
+
+// ── Profile / Publish ───────────────────────────────────────────────────────
+
+export interface PublishedTokensResult {
+    tokenIds: number[];
+}
+
+export interface PublishTokenResult {
+    ok: boolean;
+    tokenId: number;
+    publisher: string;
+    alreadyPublished: boolean;
+}
+
+export const getPublishedTokens = () =>
+    apiFetch<PublishedTokensResult>("/profile/published");
+
+export interface OwnedTokensResult {
+    tokenIds: number[];
+}
+
+export const getOwnedTokens = () =>
+    apiFetch<OwnedTokensResult>("/profile/owned");
+
+export const publishToken = (tokenId: number) =>
+    apiFetch<PublishTokenResult>("/profile/publish", {
+        method: "POST",
+        body: JSON.stringify({ tokenId }),
+    });
 

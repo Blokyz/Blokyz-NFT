@@ -16,6 +16,7 @@ export function NavBar() {
     { href: "/", label: "HOME" },
     { href: "/mint", label: "MINT" },
     { href: "/collection", label: "COLLECTION" },
+    { href: "/profile", label: "PROFILE" },
   ];
 
   return (

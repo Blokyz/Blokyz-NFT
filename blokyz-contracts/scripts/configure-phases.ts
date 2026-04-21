@@ -41,15 +41,17 @@ async function main() {
     // ── Phase timing ────────────────────────────────────────────────────────
     // Each phase is 5 minutes, consecutive, starting from now.
     // GTD_FREE → GTD_MINT → WL_FCFS → PUBLIC
-    const now      = Math.floor(Date.now() / 1000);
-    const TEN_MIN  = 10 * 60; // 600 seconds
-    const price    = ethers.parseEther("0.01");
+    const now        = Math.floor(Date.now() / 1000);
+    const DELAY      = 0;         // start immediately
+    const PHASE_DUR  = 15 * 60;  // 15 minutes each
+    const start      = now + DELAY;
+    const price      = ethers.parseEther("0.01");
 
     const phases = [
-        { id: 1, start: now,               end: now + TEN_MIN,     price: 0n,    walletCap: 2 }, // GTD_FREE — free mint
-        { id: 2, start: now + TEN_MIN,     end: now + TEN_MIN * 2, price,        walletCap: 2 }, // GTD_MINT — 0.01 ETH
-        { id: 3, start: now + TEN_MIN * 2, end: now + TEN_MIN * 3, price,        walletCap: 1 }, // WL_FCFS  — 0.01 ETH
-        { id: 4, start: now + TEN_MIN * 3, end: now + TEN_MIN * 4, price,        walletCap: 5 }, // PUBLIC   — 0.01 ETH
+        { id: 1, start: start,                  end: start + PHASE_DUR,     price: 0n,  walletCap: 2 }, // GTD_FREE — free mint
+        { id: 2, start: start + PHASE_DUR,      end: start + PHASE_DUR * 2, price,      walletCap: 2 }, // GTD_MINT — 0.01 ETH
+        { id: 3, start: start + PHASE_DUR * 2,  end: start + PHASE_DUR * 3, price,      walletCap: 1 }, // WL_FCFS  — 0.01 ETH
+        { id: 4, start: start + PHASE_DUR * 3,  end: start + PHASE_DUR * 4, price,      walletCap: 5 }, // PUBLIC   — 0.01 ETH
     ];
 
     console.log("  Phase Schedule (UTC):");
